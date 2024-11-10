@@ -1,3 +1,4 @@
+// Stickman.js
 import { StickmanAnimation } from './StickmanAnimation.js';
 import { StickmanRenderer } from './StickmanRenderer.js';
 import { StickmanState } from './StickmanState.js';
@@ -20,6 +21,10 @@ export class Stickman {
         // Set initial position
         this.movement.position.x = this.canvas.canvas.width / 2;
         this.movement.position.y = -this.canvas.boxSize;
+
+        // Add delay before dropping animation
+        this.dropDelay = 60; // 1 second at 60fps
+        this.dropDelayCounter = 0;
     }
 
     setWalkingDistance(percentage) {
@@ -83,13 +88,41 @@ export class Stickman {
         } else if (this.state.isCarrying && this.state.isWalking && this.movement.hasReachedTarget()) {
             this.state.isWalking = false;
             this.animation.stopWalking();
+            
+            // Start drop animation after delay
+            if (!this.state.isDropping) {
+                this.dropDelayCounter++;
+                if (this.dropDelayCounter >= this.dropDelay) {
+                    this.state.isDropping = true;
+                    this.state.isCarrying = false;
+                }
+            }
+        }
+
+        // Handle dropping animation
+        if (this.state.isDropping && !this.state.hasDropped) {
+            if (this.animation.updateDropAnimation()) {
+                this.state.hasDropped = true;
+                this.state.isDropping = false;
+                this.state.isReturning = true;
+                this.state.isWalking = true;
+            }
         }
     }
 
     draw(ctx) {
         if (this.movement.position.y < -this.size) return;
         
-        const angles = this.animation.getLimbAngles(this.state.isCarrying);
-        this.renderer.draw(ctx, this.movement.position, angles, this.state.isCarrying);
+        const angles = this.animation.getLimbAngles(
+            this.state.isCarrying, 
+            this.state.isDropping
+        );
+        
+        this.renderer.draw(
+            ctx, 
+            this.movement.position, 
+            angles, 
+            this.state.isCarrying
+        );
     }
 }

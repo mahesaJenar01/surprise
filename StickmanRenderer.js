@@ -1,3 +1,4 @@
+// StickmanRenderer.js
 import { COLORS } from './constants.js';
 
 export class StickmanRenderer {
@@ -19,7 +20,7 @@ export class StickmanRenderer {
         this._drawBody(ctx, position, headRadius, bodyLength);
         
         if (isCarrying) {
-            this._drawCarriedBox(ctx, position, headRadius, bodyLength);
+            this._drawCarriedBox(ctx, position, headRadius, bodyLength, angles.leftArm);
         }
         
         this._drawArms(ctx, position, angles, limbLength, headRadius, bodyLength);
@@ -76,11 +77,17 @@ export class StickmanRenderer {
         ctx.stroke();
     }
 
-    _drawCarriedBox(ctx, position, headRadius, bodyLength) {
+    _drawCarriedBox(ctx, position, headRadius, bodyLength, armAngle) {
         const boxSize = this.size * 0.25;
         const shouldersY = position.y + headRadius * 2 + bodyLength * 0.2;
-        const boxX = position.x + (boxSize * 0.1);
-        const boxY = shouldersY - boxSize * 0.1;
+        
+        // Calculate box position based on arm angle
+        const armLength = this.size * 0.3 * 0.7; // Same as in _drawArms
+        const boxOffsetX = Math.sin(armAngle) * armLength * 0.3;
+        const boxOffsetY = Math.cos(armAngle) * armLength * 0.3;
+        
+        const boxX = position.x + boxOffsetX;
+        const boxY = shouldersY + boxOffsetY;
         const tiltAngle = Math.PI / 24;
         
         ctx.save();

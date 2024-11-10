@@ -1,3 +1,4 @@
+// StickmanMovement.js
 import { Vector2D } from './utils.js';
 
 export class StickmanMovement {
@@ -9,6 +10,9 @@ export class StickmanMovement {
         this.position = new Vector2D();
         this.minScale = 0.2;
         this.maxScale = 1.0;
+        this.returnSpeed = this.canvas.boxSize * 0.015;
+        this.walkSpeed = this.canvas.boxSize * 0.01;
+        this.carrySpeed = this.canvas.boxSize * 0.008;
     }
 
     setWalkingDistance(percentage) {
@@ -20,19 +24,19 @@ export class StickmanMovement {
     updatePosition(state, baseSize) {
         if (!state.hasCompletedFirstWalk) {
             return this._updateFirstWalkCycle(state, baseSize);
-        } else if (state.isCarrying) {
+        } else if (state.isCarrying || state.isDropping) {
             return this._updateCarryingCycle(state, baseSize);
+        } else if (state.isReturning && state.hasDropped) {
+            return this._updateReturnCycle(state, baseSize);
         }
         return baseSize;
     }
 
     _updateFirstWalkCycle(state, baseSize) {
         if (state.isWalking && !state.hasArrived) {
-            const walkSpeed = this.canvas.boxSize * 0.01;
-            this.currentDistance += walkSpeed;
+            this.currentDistance += this.walkSpeed;
         } else if (state.isReturning) {
-            const walkSpeed = this.canvas.boxSize * 0.015;
-            this.currentDistance -= walkSpeed;
+            this.currentDistance -= this.returnSpeed;
         }
 
         this.position.y = this.startY + this.currentDistance;
@@ -45,14 +49,21 @@ export class StickmanMovement {
 
     _updateCarryingCycle(state, baseSize) {
         if (state.isWalking) {
-            const walkSpeed = this.canvas.boxSize * 0.008;
-            this.currentDistance += walkSpeed;
+            this.currentDistance += this.carrySpeed;
             this.position.y = this.startY + this.currentDistance;
             
             const progress = Math.min(this.currentDistance / this.targetDistance, 1);
             return baseSize * (this.minScale + (this.maxScale - this.minScale) * progress);
         }
         return baseSize;
+    }
+
+    _updateReturnCycle(state, baseSize) {
+        this.currentDistance -= this.returnSpeed;
+        this.position.y = this.startY + this.currentDistance;
+        
+        const progress = Math.max(0, this.currentDistance / this.targetDistance);
+        return baseSize * (this.minScale + (this.maxScale - this.minScale) * progress);
     }
 
     hasReachedTarget() {

@@ -5,6 +5,7 @@ import { Pathway } from './Pathway.js';
 import { SparkleSystem } from './SparkleSystem.js';
 import { Stickman } from './Stickman.js';
 
+// GiftBoxApp class
 class GiftBoxApp {
     constructor() {
         this.canvas = new CanvasManager();
@@ -14,10 +15,8 @@ class GiftBoxApp {
         this.sparkleSystem = new SparkleSystem(this.canvas);
         this.stickman = new Stickman(this.canvas);
         
-        // Set stickman to walk 40% down the screen
         this.stickman.setWalkingDistance(70);
         
-        // Always keep box hidden
         this.showBox = false;
         this.isOpening = false;
         this.isOpen = false;
@@ -28,16 +27,19 @@ class GiftBoxApp {
     }
 
     setupEventListeners() {
-        // Keep event listeners but make them ineffective
         this.canvas.canvas.addEventListener('click', (event) => {
-            // Click events won't do anything since showBox is always false
-            return;
+            if (this.showBox && !this.isOpening) {
+                this.isOpening = true;
+            }
         });
 
         window.addEventListener('resize', () => {
-            // Only update necessary components
             if (!this.stickmanHasLeft) {
                 this.stickman.updateDimensions();
+            }
+            if (this.showBox) {
+                this.box.updateDimensions();
+                this.lid.updateDimensions();
             }
         });
     }
@@ -53,16 +55,22 @@ class GiftBoxApp {
         if (!this.stickmanHasLeft) {
             this.stickman.update();
             
-            // Check if stickman has completed its journey
+            if (this.stickman.state.isDropping && !this.stickman.state.hasDropped) {
+                // Start scaling the box when dropping begins
+                if (!this.box.isScaling && !this.showBox) {
+                    this.showBox = true;
+                    this.box.startScaling();
+                }
+            }
+            
             if (this.stickman.hasLeftScreen()) {
                 this.stickmanHasLeft = true;
-                // Keep showBox false even after stickman leaves
-                this.showBox = false;
             }
         }
 
-        // Keep other update logic but it won't execute since showBox is always false
+        // Update box scaling animation
         if (this.showBox) {
+            this.box.update();
             this.lid.update(this.isOpening);
             this.sparkleSystem.update();
             
@@ -78,16 +86,14 @@ class GiftBoxApp {
         
         this.pathway.draw(this.canvas.ctx);
         
-        // Always draw stickman if it hasn't left
         if (!this.stickmanHasLeft) {
             this.stickman.draw(this.canvas.ctx);
         }
         
-        // Box-related rendering won't execute since showBox is always false
         if (this.showBox) {
             this.box.draw(this.canvas.ctx);
             this.lid.draw(this.canvas.ctx);
-            this.box.drawBow(this.canvas.ctx, this.lid.height);
+            this.box.drawBow(this.canvas.ctx);
             this.sparkleSystem.draw(this.canvas.ctx);
         }
     }

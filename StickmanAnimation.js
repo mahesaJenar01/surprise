@@ -19,8 +19,10 @@ export class StickmanAnimation {
         this.waitTimeAfterWave = 60;
         this.isWaitingAfterWave = false;
 
-        // Add carrying pose
-        this.isCarrying = false;
+        // Drop animation properties
+        this.dropProgress = 0;
+        this.dropDuration = 30; // frames
+        this.dropAnimationComplete = false;
     }
 
     resetWalkCycle() {
@@ -31,6 +33,19 @@ export class StickmanAnimation {
         this.walkCycle = 0;
         this.legAngle = 0;
         this.armAngle = 0;
+    }
+
+    updateDropAnimation() {
+        if (this.dropProgress < this.dropDuration) {
+            this.dropProgress++;
+            const progress = this.dropProgress / this.dropDuration;
+            // Gradually lower arms
+            const startAngle = Math.PI / 2.5;
+            const endAngle = 0;
+            this.armAngle = startAngle + (endAngle - startAngle) * progress;
+            return false;
+        }
+        return true;
     }
 
     updateWalkCycle() {
@@ -77,7 +92,7 @@ export class StickmanAnimation {
         this.isWaitingAfterWave = false;
     }
 
-    getLimbAngles(isCarrying = false) {
+    getLimbAngles(isCarrying = false, isDropping = false) {
         if (this.isWaving || this.isWaitingAfterWave) {
             const armAngle = !this.isWaving ? 0 : -this.armAngle;
             return {
@@ -88,12 +103,20 @@ export class StickmanAnimation {
             };
         }
 
+        if (isDropping) {
+            return {
+                leftLeg: 0,
+                rightLeg: 0,
+                leftArm: this.armAngle,
+                rightArm: this.armAngle
+            };
+        }
+
         if (isCarrying) {
-            // Arms positioned to carry the box
             return {
                 leftLeg: -this.legAngle,
                 rightLeg: this.legAngle,
-                leftArm: Math.PI / 2.5,  // Arms raised to carry box
+                leftArm: Math.PI / 2.5,
                 rightArm: Math.PI / 2.5
             };
         }

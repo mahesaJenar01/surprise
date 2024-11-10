@@ -7,6 +7,10 @@ export class Box {
         this.canvas = canvasManager;
         this.position = new Vector2D();
         this.ribbonWidth = 0;
+        this.scale = 0;  // Start with scale 0
+        this.targetScale = 1;
+        this.scaleSpeed = 0.05;
+        this.isScaling = false;
         this.updateDimensions();
     }
 
@@ -14,60 +18,80 @@ export class Box {
         const center = this.canvas.getCenter();
         this.position.x = center.x;
         this.position.y = center.y;
-        this.ribbonWidth = this.canvas.boxSize * 0.167; // About 1/6 of box size
+        this.ribbonWidth = this.canvas.boxSize * 0.167;
+    }
+
+    startScaling() {
+        this.scale = 0;
+        this.isScaling = true;
+    }
+
+    update() {
+        if (this.isScaling && this.scale < this.targetScale) {
+            this.scale += this.scaleSpeed;
+            if (this.scale >= this.targetScale) {
+                this.scale = this.targetScale;
+                this.isScaling = false;
+            }
+        }
     }
 
     draw(ctx) {
-        const halfSize = this.canvas.boxSize / 2;
-        const halfRibbon = this.ribbonWidth / 2;
+        if (this.scale <= 0) return;
+
+        const halfSize = (this.canvas.boxSize * this.scale) / 2;
+        const halfRibbon = (this.ribbonWidth * this.scale) / 2;
+
+        ctx.save();
+        ctx.translate(this.position.x, this.position.y);
 
         // Draw main box body
         ctx.fillStyle = COLORS.BOX;
         ctx.fillRect(
-            this.position.x - halfSize,
-            this.position.y - halfSize,
-            this.canvas.boxSize,
-            this.canvas.boxSize
+            -halfSize,
+            -halfSize,
+            this.canvas.boxSize * this.scale,
+            this.canvas.boxSize * this.scale
         );
 
-        // Draw horizontal ribbon first (underneath)
+        // Draw horizontal ribbon
         ctx.fillStyle = COLORS.RIBBON;
         ctx.fillRect(
-            this.position.x - halfSize,
-            this.position.y - halfRibbon,
-            this.canvas.boxSize,
-            this.ribbonWidth
+            -halfSize,
+            -halfRibbon,
+            this.canvas.boxSize * this.scale,
+            this.ribbonWidth * this.scale
         );
 
-        // Draw vertical ribbon on top with slight offset for 3D effect
+        // Draw vertical ribbon
         ctx.fillStyle = COLORS.RIBBON;
-        // Left part of vertical ribbon
         ctx.fillRect(
-            this.position.x - halfRibbon,
-            this.position.y - halfSize,
-            this.ribbonWidth,
-            (this.canvas.boxSize / 2) - (this.ribbonWidth / 2)
+            -halfRibbon,
+            -halfSize,
+            this.ribbonWidth * this.scale,
+            (this.canvas.boxSize / 2 - this.ribbonWidth / 2) * this.scale
         );
-        // Right part of vertical ribbon
         ctx.fillRect(
-            this.position.x - halfRibbon,
-            this.position.y + halfRibbon,
-            this.ribbonWidth,
-            (this.canvas.boxSize / 2) - (this.ribbonWidth / 2)
+            -halfRibbon,
+            halfRibbon,
+            this.ribbonWidth * this.scale,
+            (this.canvas.boxSize / 2 - this.ribbonWidth / 2) * this.scale
         );
 
-        // Add a small shadow/highlight effect at the crossing point
+        // Add shadow effect at crossing point
         ctx.fillStyle = 'rgba(0,0,0,0.1)';
         ctx.fillRect(
-            this.position.x - halfRibbon,
-            this.position.y - halfRibbon,
-            this.ribbonWidth,
-            this.ribbonWidth
+            -halfRibbon,
+            -halfRibbon,
+            this.ribbonWidth * this.scale,
+            this.ribbonWidth * this.scale
         );
+
+        ctx.restore();
     }
 
-    drawBow(ctx, lidHeight) {
-        if (lidHeight >= 5) return;
+    drawBow(ctx) {
+        if (this.scale < 1) return;
 
         const bowSize = this.canvas.boxSize * 0.125;
         const x = this.position.x;
